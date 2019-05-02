@@ -5,22 +5,6 @@ import numpy as np
 
 device = torch.device("cuda")
 
-rays = torch.tensor([[[x,0,0,1],[0,1,0,0]] for x in np.linspace(-0.9,0.9,2000)],dtype=torch.float, device=device)
-
-scene = torch.tensor([
-    [
-      [ 1  , 0  , 0  , 0  ],
-      [ 0  , 0  , 0  ,-0.5],
-      [ 0  , 0  , 0  , 0  ],
-      [ 0  ,-0.5, 0  , 0  ]
-    ],
-    [
-      [ 1  , 0  , 0  , 0  ],
-      [ 0  , 1  , 0  , 0  ],
-      [ 0  , 0  , 0  , 0  ],
-      [ 0  , 0  , 0  ,-1  ]
-    ]
-],dtype=torch.float, device=device)
 
 def advance_to(M,rays):
     Mr = rays.view(-1,4).matmul(M.transpose(0,1)).view(-1,2,4).transpose(1,2)
@@ -64,27 +48,49 @@ def reflect(M, rays, plot=True):
     return rays
 
 def plot_arrows(rays,v,color="k"):
+    
     x = rays[:,0,0].cpu().numpy()
-    y = rays[:,0,1].cpu().numpy()
+    y = rays[:,0,2].cpu().numpy()
     dx= v[:,0].cpu().numpy()
-    dy= v[:,1].cpu().numpy()
+    dy= v[:,2].cpu().numpy()
     for x,y,dx,dy in zip (x,y,dx,dy):
         plt.arrow(x,y,dx,dy,color=color)
 
-def advance_to_and_reflect(M,rays):
+def plot_rays(rays,factor=1.0,color="k"):
+    r = rays.cpu().detach().numpy()
+    x = r[:,0,0]
+    y = r[:,0,2]
+    dx= factor * r[:,1,0]
+    dy= factor * r[:,1,2]
+    for x,y,dx,dy in zip (x,y,dx,dy):
+        plt.arrow(x,y,dx,dy,color=color,head_width=0.05,head_length=0.1)
+
+def advance_to_and_reflect(M,rays, plot=False):
     advance_to(M, rays)
-    reflect(M, rays)
+    reflect(M, rays, plot=plot)
     return rays
 
-advance_to_and_reflect(scene[1],rays)
-#advance_to_and_reflect(scene[0],rays)
 
-plt.plot(rays[:,0,0].cpu().numpy(), rays[:,0,1].cpu().numpy(), "go")
+rays = torch.tensor([[[x,y,4,1],[0,0,-0.5,0]] for x in np.linspace(-0.9,0.9,20) for y in np.linspace(-0.1,0.1,3)],dtype=torch.float, device=device)
+mirror=torch.tensor(    [
+      [ 0.2, 0  , 0  , 0  ],
+      [ 0  , 0.2, 0  , 0  ],
+      [ 0  , 0  , 0  ,-0.5],
+      [ 0  , 0  ,-0.5, 0  ]
+    ], requires_grad=True, dtype=torch.float, device=device)
+plane=torch.tensor(    [
+      [ 0  , 0  , 0  , 0  ],
+      [ 0  , 0  , 0  , 0  ],
+      [ 0  , 0  , 0  ,-1  ],
+      [ 0  , 0  ,-1  , 2  ]
+    ], requires_grad=True, dtype=torch.float, device=device)
 
-x=np.linspace(-0.9,0.9,100)
-plt.plot(x,x*x)
-plt.plot(x,np.sqrt(1-x*x))
+plot_rays(rays,color="r")
+advance_to_and_reflect(mirror,rays)
+plot_rays(rays,color="g")
+advance_to(plane,rays)
+plot_rays(rays,color="b")
 
 plt.xlim(-2,2)
-plt.ylim(-1,3)
+plt.ylim(-1,6)
 plt.show()
