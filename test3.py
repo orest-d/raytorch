@@ -83,14 +83,25 @@ plane=torch.tensor(    [
       [ 0  , 0  , 0  , 0  ],
       [ 0  , 0  , 0  ,-1  ],
       [ 0  , 0  ,-1  , 2  ]
-    ], requires_grad=True, dtype=torch.float, device=device)
+    ], requires_grad=False, dtype=torch.float, device=device)
+center = torch.tensor(
+      [ 0  , 0  , 1  , 1  ],
+    requires_grad=False, dtype=torch.float, device=device)
+
 
 plot_rays(rays,color="r")
 advance_to_and_reflect(mirror,rays)
 plot_rays(rays,color="g")
 advance_to(plane,rays)
-plot_rays(rays,color="b")
 
+d = rays[:,0,:]-center
+dist = (d*d).sum()
+#print(d)
+print(dist)
+#dist.backward()
+
+plot_rays(rays,color="b")
+plt.plot([0],[1],"k+")
 plt.xlim(-2,2)
 plt.ylim(-1,6)
 plt.show()
